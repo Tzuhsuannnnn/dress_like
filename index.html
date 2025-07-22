@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>Secret Gift Exchange</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      margin-top: 60px;
+      padding: 32px 24px;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(60, 60, 120, 0.12);
+      max-width: 350px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 {
+      color: #4f46e5;
+      margin-bottom: 16px;
+    }
+    select,
+    button {
+      width: 100%;
+      padding: 10px;
+      margin: 12px 0;
+      border-radius: 8px;
+      border: 1px solid #c7d2fe;
+      font-size: 1em;
+    }
+    button {
+      background: #6366f1;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #4338ca;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 1.3em;
+      color: #059669;
+      font-weight: bold;
+      min-height: 40px;
+    }
+    .roller {
+      font-size: 1.4em;
+      color: #4f46e5;
+      margin-top: 24px;
+      height: 40px;
+    }
+    .footer {
+      margin-top: 40px;
+      color: #a1a1aa;
+      font-size: 0.95em;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1> dress like ... in JEJU ! </h1>
+
+    <div id="login-section">
+      <label for="loginName">Choose your name:</label>
+      <select id="loginName">
+        <option value="" disabled selected>-- Select Name --</option>
+        <option>魏慈萱</option>
+        <option>陳星霓</option>
+        <option>林芝羽</option>
+        <option>林葦晴</option>
+        <option>徐郁雯</option>
+        <option>徐郁淇</option>
+        <option>詹又潔</option>
+        <option>陳怡臻</option>
+      </select>
+      <button id="loginBtn">Login</button>
+    </div>
+
+    <div id="draw-section" class="hidden">
+      <div class="roller" id="roller"></div>
+      <button id="drawBtn">Reveal who you need to dress like</button>
+    </div>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <div class="footer">
+    Your result is private and saved on Firebase. 🎉
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDr0TAyo2HsfKr-i8m3QHJxsEe5PRf1Ad4",
+      authDomain: "dreike-f5cf1.firebaseapp.com",
+      databaseURL: "https://dreike-f5cf1-default-rtdb.firebaseio.com",
+      projectId: "dreike-f5cf1",
+      storageBucket: "dreike-f5cf1.firebasestorage.app",
+      messagingSenderId: "399414167077",
+      appId: "1:399414167077:web:c2b67800d6babc134fa1cc",
+      measurementId: "G-NDK6SD83FT"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const names = [
+      "魏慈萱",
+      "陳星霓",
+      "林芝羽",
+      "林葦晴",
+      "徐郁雯",
+      "徐郁淇",
+      "詹又潔",
+      "陳怡臻",
+    ];
+
+    let currentUser = "";
+
+    const loginBtn = document.getElementById("loginBtn");
+    const drawBtn = document.getElementById("drawBtn");
+
+    loginBtn.addEventListener("click", login);
+    drawBtn.addEventListener("click", drawGift);
+
+    async function login() {
+      const select = document.getElementById("loginName");
+      const name = select.value;
+      if (!name) {
+        alert("Please select your name.");
+        return;
+      }
+      currentUser = name;
+
+      try {
+        const snapshot = await get(ref(db, `assignments/${currentUser}`));
+        if (snapshot.exists()) {
+          const assignedTo = snapshot.val();
+          document.getElementById("login-section").classList.add("hidden");
+          document.getElementById("result").textContent = `Hi ${currentUser}, you already drew: ${assignedTo}! 🎁`;
+        } else {
+          document.getElementById("login-section").classList.add("hidden");
+          document.getElementById("draw-section").classList.remove("hidden");
+        }
+      } catch (error) {
+        alert("Error reading from database: " + error);
+      }
+    }
+
+    async function drawGift() {
+      try {
+        const snapshot = await get(ref(db, 'assignments'));
+        const assignedList = snapshot.exists() ? snapshot.val() : {};
+
+        const assignedValues = Object.values(assignedList);
+        const available = names.filter(n => n !== currentUser && !assignedValues.includes(n));
+
+        if (available.length === 0) {
+          document.getElementById("roller").textContent = "No one left to assign!";
+          return;
+        }
+
+        let roller = document.getElementById("roller");
+        let i = 0;
+        let animationInterval = setInterval(() => {
+          roller.textContent = `🎲 Drawing... ${available[i % available.length]}`;
+          i++;
+        }, 100);
+
+        setTimeout(async () => {
+          clearInterval(animationInterval);
+          const chosen = available[Math.floor(Math.random() * available.length)];
+
+          await set(ref(db, `assignments/${currentUser}`), chosen);
+
+          document.getElementById("draw-section").classList.add("hidden");
+          document.getElementById("result").textContent = `Hi ${currentUser}, you will need to dress like: ${chosen}! 🎁`;
+        }, 2500);
+      } catch (error) {
+        alert("Error during drawing: " + error);
+      }
+    }
+  </script>
+</body>
+</html>
