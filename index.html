@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>Secret Gift Exchange</title>
+  <title>Dress Like</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
@@ -153,7 +153,7 @@
         if (snapshot.exists()) {
           const assignedTo = snapshot.val();
           document.getElementById("login-section").classList.add("hidden");
-          document.getElementById("result").textContent = `Hi ${currentUser}, you already drew: ${assignedTo}! 🎁`;
+          document.getElementById("result").textContent = `Hi ${currentUser}, you need to dress like: ${assignedTo}! 🎁`;
         } else {
           document.getElementById("login-section").classList.add("hidden");
           document.getElementById("draw-section").classList.remove("hidden");
